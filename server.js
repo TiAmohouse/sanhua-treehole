@@ -2,6 +2,7 @@ const express = require('express');
 const session = require('express-session');
 const path = require('path');
 const bcrypt = require('bcryptjs');
+const multer = require('multer');
 const db = require('./db');
 
 const app = express();
@@ -14,6 +15,25 @@ app.use(session({
   resave: false,
   saveUninitialized: false
 }));
+
+// 文件上传配置
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, path.join(__dirname, 'public/uploads')),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname) || '.jpg';
+    cb(null, Date.now() + '-' + Math.random().toString(36).slice(2,8) + ext);
+  }
+});
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowed.includes(ext)) return cb(null, true);
+    cb(new Error('只支持 jpg/png/gif/webp 格式'));
+  }
+});
 
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -52,7 +72,7 @@ app.post('/api/logout', (req, res) => {
 // 当前用户
 app.get('/api/me', (req, res) => {
   if (req.session.user) {
-    const user = db.prepare('SELECT id, username, nickname, avatar, bio, phone, created_at FROM users WHERE id = ?').get(req.session.user.id);
+    const user = db.prepare('SELECT id, username, nickname, avatar, bio, phone, bg_image, created_at FROM users WHERE id = ?').get(req.session.user.id);
     res.json({ ok: true, user });
   } else {
     res.json({ ok: false });
@@ -353,6 +373,14 @@ app.get('/api/notifications', (req, res) => {
 });
 
 // 获取所有用户（公共广场展示）
+
+// 上传图片
+app.post('/api/upload', upload.single('image'), (req, res) => {
+  if (!req.session.user) return res.json({ ok: false, msg: '请先登录' });
+  if (!req.file) return res.json({ ok: false, msg: '请选择图片' });
+  const url = '/uploads/' + req.file.filename;
+  res.json({ ok: true, url, msg: '上传成功' });
+});
 
 // 保存用户自定义背景图
 app.post('/api/user/bg', (req, res) => {

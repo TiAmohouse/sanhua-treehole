@@ -339,14 +339,21 @@
 <div class="modal-overlay" id="bgModal">
   <div class="modal">
     <h2>🎨 设置背景图</h2>
-    <p style="color:#888;font-size:0.85em;margin-bottom:12px;">输入一张图片的网址，设为你的树洞背景～</p>
-    <input type="text" id="bgImageUrl" placeholder="https://example.com/bg.jpg">
-    <div style="display:flex;gap:8px;margin-bottom:12px;">
-      <button class="btn-secondary" style="flex:1;font-size:0.8em;padding:8px;" onclick="previewBg()">👁️ 预览</button>
-      <button class="btn-secondary" style="flex:1;font-size:0.8em;padding:8px;" onclick="clearBg()">🗑️ 恢复默认</button>
+    <p style="color:#888;font-size:0.85em;margin-bottom:12px;">从相册选择图片，或输入图片网址</p>
+    
+    <div style="text-align:center;margin-bottom:12px;">
+      <label style="display:inline-block;padding:12px 24px;background:linear-gradient(135deg,#00897b,#00acc1);color:white;border-radius:25px;cursor:pointer;font-weight:600;font-size:0.95em;">
+        📁 从相册选择
+        <input type="file" id="bgFileInput" accept="image/*" style="display:none;" onchange="uploadBgImage()">
+      </label>
+      <div style="margin:10px 0;color:#bbb;">—— 或者 ——</div>
+      <input type="text" id="bgImageUrl" placeholder="粘贴图片网址..." style="width:100%;padding:10px 14px;border:2px solid #eee;border-radius:12px;outline:none;">
     </div>
+    
     <div id="bgPreview" style="width:100%;height:120px;border-radius:12px;background-size:cover;background-position:center;margin-bottom:12px;display:none;"></div>
-    <div style="text-align:right;">
+    
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn-secondary" onclick="clearBg()">🗑️ 恢复默认</button>
       <button class="btn-primary" onclick="saveBg()">保存</button>
       <button class="btn-secondary" onclick="closeModal('bgModal')">取消</button>
     </div>
@@ -867,10 +874,13 @@ async function doSaveFriendNote(friendId, note) {
 async function logout() {
   document.getElementById('userMenu').classList.add('hidden');
   await api('/api/logout');
+  // 清除保存的登录信息
+  localStorage.removeItem('savedUser');
+  localStorage.removeItem('savedPass');
   currentUser = null;
   toast('已退出～');
-  // 强制刷新页面以清除所有状态
-  location.reload();
+  // 重新加载页面
+  setTimeout(() => location.reload(), 300);
 }
 
 function showWrite() {
@@ -1078,7 +1088,87 @@ async function deletePost(id) {
   render();
   // 定期检查未读私信
   setInterval(refreshUnread, 10000);
+  // 加载用户背景图
+  loadUserBg();
 })();
+
+// ============ 背景图 ============
+
+function showBgSetting() {
+  document.getElementById('userMenu').classList.add('hidden');
+  document.getElementById('bgImageUrl').value = currentUser?.bg_image || '';
+  document.getElementById('bgPreview').style.display = 'none';
+  document.getElementById('bgModal').classList.add('show');
+}
+
+function previewBg() {
+  const url = document.getElementById('bgImageUrl').value.trim();
+  if (!url) { toast('先输入图片网址～'); return; }
+  const preview = document.getElementById('bgPreview');
+  preview.style.display = 'block';
+  preview.style.backgroundImage = 'url(' + url + ')';
+}
+
+// 从相册选择上传
+async function uploadBgImage() {
+  const fileInput = document.getElementById('bgFileInput');
+  const file = fileInput.files[0];
+  if (!file) return;
+  
+  if (file.size > 5 * 1024 * 1024) {
+    toast('图片不能超过5MB～');
+    fileInput.value = '';
+    return;
+  }
+  
+  const formData = new FormData();
+  formData.append('image', file);
+  
+  try {
+    const r = await fetch('/api/upload', { method: 'POST', body: formData });
+    const data = await r.json();
+    if (!data.ok) { toast(data.msg); fileInput.value = ''; return; }
+    
+    // 填入链接并预览
+    document.getElementById('bgImageUrl').value = data.url;
+    const preview = document.getElementById('bgPreview');
+    preview.style.display = 'block';
+    preview.style.backgroundImage = 'url(' + data.url + ')';
+    preview.style.backgroundSize = 'cover';
+    toast('上传成功！点保存使用～');
+  } catch(e) {
+    toast('上传失败，请重试');
+  }
+  fileInput.value = '';
+}
+
+function clearBg() {
+  document.getElementById('bgImageUrl').value = '';
+  document.getElementById('bgPreview').style.display = 'none';
+}
+
+async function saveBg() {
+  const url = document.getElementById('bgImageUrl').value.trim();
+  const r = await api('/api/user/bg', { bg_image: url || null });
+  if (!r.ok) { toast(r.msg); return; }
+  closeModal('bgModal');
+  if (currentUser) currentUser.bg_image = url || null;
+  loadUserBg();
+  toast('背景图已更新 🎨');
+}
+
+function loadUserBg() {
+  if (currentUser && currentUser.bg_image) {
+    document.body.style.backgroundImage = 'url(' + currentUser.bg_image + ')';
+    document.body.style.backgroundSize = 'cover';
+    document.body.style.backgroundAttachment = 'fixed';
+    document.body.style.backgroundPosition = 'center';
+  } else {
+    document.body.style.backgroundImage = 'linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 30%, #80deea 60%, #4dd0e1 100%)';
+    document.body.style.backgroundSize = '';
+    document.body.style.backgroundAttachment = '';
+  }
+}
 
 // 字数统计
 document.addEventListener('DOMContentLoaded', () => {
