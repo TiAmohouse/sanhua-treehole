@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌸 三花的树洞</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 30%, #80deea 60%, #4dd0e1 100%);
+    min-height: 100vh;
+    color: #333;
+  }
+  .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+
+  /* 头部 */
+  .header {
+    text-align: center;
+    padding: 30px 20px;
+    background: rgba(255,255,255,0.85);
+    border-radius: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+  }
+  .header h1 {
+    font-size: 2em;
+    background: linear-gradient(135deg, #00796b, #00bcd4, #0288d1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .header p { color: #888; margin-top: 5px; font-size: 0.9em; }
+  .header .subtitle {
+    display: inline-block;
+    background: linear-gradient(135deg, #00796b22, #00bcd422);
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    color: #666;
+    margin-top: 8px;
+  }
+
+  /* 导航 */
+  .nav {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .nav button, .nav .user-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: 600;
+    transition: all 0.2s;
+    background: rgba(255,255,255,0.85);
+    color: #555;
+  }
+  .nav button:hover, .nav .user-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  .menu-btn {
+    display:block;width:100%;padding:10px 18px;border:none;border-radius:14px;
+    background:linear-gradient(135deg,#e0f7fa,#b2ebf2);color:#00695c;
+    font-size:0.9em;font-weight:600;cursor:pointer;transition:all 0.2s;
+  }
+  .menu-btn:hover { background:linear-gradient(135deg,#b2ebf2,#80deea); transform:scale(1.02); }
+  .nav button.active {
+    background: linear-gradient(135deg, #00897b, #00acc1);
+    color: white;
+  }
+  .nav-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+  /* 卡片 */
+  .card {
+    background: rgba(255,255,255,0.92);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .card-title {
+    font-size: 1.1em;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: #333;
+  }
+  .card-meta {
+    font-size: 0.8em;
+    color: #999;
+    margin-bottom: 10px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  .card-meta .avatar { font-size: 1.3em; }
+  .card-content {
+    line-height: 1.8;
+    color: #444;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  .card-actions { margin-top: 12px; display: flex; gap: 8px; }
+  .card-actions button {
+    padding: 5px 14px;
+    border: 1px solid #ddd;
+    border-radius: 15px;
+    background: white;
+    cursor: pointer;
+    font-size: 0.8em;
+    color: #666;
+    transition: all 0.2s;
+  }
+  .card-actions button:hover { background: #f5f5f5; border-color: #bbb; }
+
+  /* 标签 */
+  .tag {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 0.75em;
+    font-weight: 600;
+  }
+  .tag-public { background: #e0f2f1; color: #00796b; }
+  .tag-private { background: #fff3e0; color: #e65100; }
+  .tag-sanhua { background: linear-gradient(135deg, #e0f7fa, #b2ebf2); color: #00695c; }
+
+  /* 对话框 */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: white;
+    border-radius: 20px;
+    padding: 30px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+  .modal h2 { margin-bottom: 18px; color: #333; font-size: 1.3em; }
+  .modal input, .modal textarea, .modal select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 2px solid #eee;
+    border-radius: 12px;
+    font-size: 0.95em;
+    margin-bottom: 12px;
+    outline: none;
+    transition: border 0.2s;
+  }
+  .modal input:focus, .modal textarea:focus { border-color: #00bcd4; }
+  .modal textarea { min-height: 120px; resize: vertical; }
+  .modal .btn-primary {
+    background: linear-gradient(135deg, #00897b, #00acc1);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    font-size: 1em;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  .modal .btn-primary:hover { opacity: 0.9; transform: scale(1.02); }
+  .modal .btn-secondary {
+    background: #f5f5f5;
+    color: #666;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    font-size: 1em;
+    cursor: pointer;
+    margin-left: 8px;
+  }
+  .modal .form-row { margin-bottom: 6px; }
+  .modal .form-row label { font-size: 0.9em; color: #666; display: flex; align-items: center; gap: 6px; }
+
+  /* 评论 */
+  .comment { padding: 10px 0; border-bottom: 1px solid #eee; }
+  .comment:last-child { border: none; }
+  .comment .cmt-meta { font-size: 0.8em; color: #999; margin-bottom: 4px; }
+  .comment .cmt-content { color: #555; }
+
+  /* 个人空间头部 */
+  .space-header {
+    text-align: center;
+    padding: 30px 20px;
+  }
+  .space-header .avatar { font-size: 4em; }
+  .space-header .nickname { font-size: 1.5em; font-weight: 700; margin: 10px 0 5px; }
+  .space-header .bio { color: #888; font-size: 0.9em; }
+  .space-header .join-date { color: #bbb; font-size: 0.8em; margin-top: 5px; }
+
+  .hidden { display: none; }
+  .toast {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.8); color: white;
+    padding: 10px 24px; border-radius: 25px;
+    font-size: 0.9em;
+    z-index: 2000;
+    animation: fadeIn 0.3s;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateX(-50%) translateY(-10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+  /* 三花特殊标记 */
+  .sanhua-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #00897b, #00acc1);
+    color: white;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 0.7em;
+    margin-left: 6px;
+  }
+
+  @media (max-width: 600px) {
+    .container { padding: 12px; }
+    .header { padding: 20px 15px; }
+    .header h1 { font-size: 1.5em; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <!-- 头部 -->
+  <div class="header">
+    <h1>🌸 三花的树洞</h1>
+    <p>一个可以安心说话的地方</p>
+    <div class="subtitle">站长 · 三花 🐱</div>
+  </div>
+
+  <!-- 导航 -->
+  <div class="nav">
+    <button class="active" onclick="switchTab('square')">🌊 公共广场</button>
+    <button onclick="switchTab('sanhua')">🌸 三花の碎碎念</button>
+    <button id="mySpaceBtn" class="hidden" onclick="switchTab('mySpace')">🏠 我的空间</button>
+    <div class="nav-right">
+      <button id="loginBtn" onclick="showLogin()" style="background:linear-gradient(135deg,#00897b,#00acc1);color:white;">登录 / 注册</button>
+      <button id="userInfo" class="hidden user-btn" onclick="toggleUserMenu()">😺 <span id="userName"></span> ▼</button>
+    </div>
+  </div>
+
+  <!-- 用户菜单 -->
+  <div id="userMenu" class="hidden card" style="text-align:center; max-width:250px; margin-left:auto; margin-bottom:10px;">
+    <div style="font-size:2em;" id="menuAvatar">😺</div>
+    <div style="font-weight:700; margin:5px 0;" id="menuName"></div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+      <button class="menu-btn" onclick="showWrite()">✏️ 写点什么</button>
+      <button class="menu-btn" onclick="showBindPhone()">📱 绑定手机号</button>
+      <button class="menu-btn" onclick="showInbox()">
+        📩 私信箱 <span id="unreadBadge" class="hidden" style="display:inline-block;background:#f44336;color:white;border-radius:10px;padding:0 6px;font-size:0.75em;line-height:1.5;margin-left:4px;">0</span>
+      </button>
+      <button class="menu-btn" onclick="showFriends()">👥 好友列表</button>
+      <button class="menu-btn" onclick="showBgSetting()">🎨 设置背景</button>
+      <button class="menu-btn" onclick="event.stopPropagation(); logout()">退出</button>
+    </div>
+  </div>
+
+  <!-- 内容区 -->
+  <div id="content"></div>
+</div>
+
+<!-- 登录/注册弹窗 -->
+<div class="modal-overlay" id="loginModal">
+  <div class="modal">
+    <h2 id="loginTitle">登录树洞</h2>
+    <input type="text" id="loginUser" placeholder="用户名 或 手机号">
+    <input type="password" id="loginPass" placeholder="密码">
+    <input type="text" id="regNick" class="hidden" placeholder="昵称（可选）">
+    <input type="text" id="regPhone" class="hidden" placeholder="手机号（可选，绑定后可用手机号登录）">
+    <div id="loginHint" style="font-size:0.78em; color:#999; margin-bottom:10px;">支持用户名或手机号登录</div>
+    <div class="form-row" style="margin-bottom:12px;">
+      <label><input type="checkbox" id="rememberMe" checked> 记住我（自动登录）</label>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <span id="loginSwitch" style="font-size:0.85em; color:#888; cursor:pointer;" onclick="toggleLoginMode()">没有账号？去注册</span>
+      <div>
+        <button class="btn-primary" onclick="doLogin()" id="loginBtn2">登录</button>
+        <button class="btn-secondary" onclick="closeModal('loginModal')">取消</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 私信发送弹窗 -->
+<div class="modal-overlay" id="privateMsgModal">
+  <div class="modal">
+    <h2>💌 私聊一句</h2>
+    <p style="color:#888;font-size:0.85em;margin-bottom:4px;">只能发一句话（限50字），等对方回应后才能继续聊～</p>
+    <textarea id="privateMsgContent" placeholder="想对ta说什么…" maxlength="50" style="min-height:60px;"></textarea>
+    <div style="text-align:right;font-size:0.8em;color:#999;" id="privateMsgCounter">0/50</div>
+    <div style="text-align:right;margin-top:6px;">
+      <button class="btn-primary" onclick="doSendPrivateMsg()">发送 💌</button>
+      <button class="btn-secondary" onclick="closeModal('privateMsgModal')">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 写东西弹窗 -->
+<div class="modal-overlay" id="writeModal">
+  <div class="modal">
+    <h2>✏️ 写点什么</h2>
+    <input type="text" id="postTitle" placeholder="标题（选填）">
+    <textarea id="postContent" placeholder="今天想说什么…"></textarea>
+    <div class="form-row">
+      <label><input type="checkbox" id="postPublic" checked> 发到公共广场</label>
+    </div>
+    <div style="text-align:right;">
+      <button class="btn-primary" onclick="doWrite()">发布</button>
+      <button class="btn-secondary" onclick="closeModal('writeModal')">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 绑定手机号弹窗 -->
+<div class="modal-overlay" id="phoneModal">
+  <div class="modal">
+    <h2>📱 绑定手机号</h2>
+    <p style="color:#888;font-size:0.85em;margin-bottom:12px;">绑定后可以使用手机号+密码登录</p>
+    <input type="text" id="bindPhone" placeholder="输入手机号">
+    <div style="text-align:right;">
+      <button class="btn-primary" onclick="doBindPhone()">保存</button>
+      <button class="btn-secondary" onclick="closeModal('phoneModal')">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 背景设置弹窗 -->
+<div class="modal-overlay" id="bgModal">
+  <div class="modal">
+    <h2>🎨 设置背景图</h2>
+    <p style="color:#888;font-size:0.85em;margin-bottom:12px;">输入一张图片的网址，设为你的树洞背景～</p>
+    <input type="text" id="bgImageUrl" placeholder="https://example.com/bg.jpg">
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <button class="btn-secondary" style="flex:1;font-size:0.8em;padding:8px;" onclick="previewBg()">👁️ 预览</button>
+      <button class="btn-secondary" style="flex:1;font-size:0.8em;padding:8px;" onclick="clearBg()">🗑️ 恢复默认</button>
+    </div>
+    <div id="bgPreview" style="width:100%;height:120px;border-radius:12px;background-size:cover;background-position:center;margin-bottom:12px;display:none;"></div>
+    <div style="text-align:right;">
+      <button class="btn-primary" onclick="saveBg()">保存</button>
+      <button class="btn-secondary" onclick="closeModal('bgModal')">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 私信箱弹窗 -->
+<div class="modal-overlay" id="inboxModal">
+  <div class="modal">
+    <div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid #e0f7fa;">
+      <span id="inboxTabMsgs" style="flex:1;text-align:center;padding:8px;cursor:pointer;border-bottom:3px solid #00897b;font-weight:700;color:#00897b;" onclick="switchInboxTab('msgs')">💬 私信</span>
+      <span id="inboxTabNotifs" style="flex:1;text-align:center;padding:8px;cursor:pointer;color:#999;" onclick="switchInboxTab('notifs')">🔔 通知</span>
+    </div>
+    <div id="inboxContent"></div>
+    <div id="inboxList"></div>
+    <div style="text-align:right;margin-top:12px;">
+      <button class="btn-secondary" onclick="closeModal('inboxModal')">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 聊天弹窗 -->
+<div class="modal-overlay" id="chatModal">
+  <div class="modal">
+    <div id="chatHeader" style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #eee;">
+      <span id="chatAvatar" style="font-size:1.5em;">😺</span>
+      <span id="chatName" style="font-weight:700;font-size:1.1em;">对方</span>
+    </div>
+    <div id="chatMessages" style="max-height:300px;overflow-y:auto;margin-bottom:12px;"></div>
+    <div id="chatActions" style="text-align:center;margin-bottom:8px;"></div>
+    <div style="display:flex;gap:8px;">
+      <input type="text" id="chatInput" placeholder="输入消息…" maxlength="200" style="flex:1;padding:10px 14px;border:2px solid #eee;border-radius:25px;outline:none;" onkeydown="if(event.key==='Enter') sendChat()">
+      <button class="btn-primary" onclick="sendChat()" style="padding:10px 18px;">发送</button>
+    </div>
+    <div style="text-align:right;margin-top:6px;">
+      <button class="btn-secondary" onclick="closeModal('chatModal')" style="font-size:0.85em;padding:5px 12px;">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 好友列表弹窗 -->
+<div class="modal-overlay" id="friendsModal">
+  <div class="modal">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <span style="cursor:pointer;font-size:0.9em;color:#00897b;" onclick="closeModal('friendsModal')">🌊 ← 返回树洞</span>
+      <h2 style="margin:0;">👥 好友列表</h2>
+      <span></span>
+    </div>
+    <div id="friendsList"></div>
+    <div style="text-align:right;margin-top:12px;">
+      <button class="btn-secondary" onclick="closeModal('friendsModal')">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 帖子详情弹窗 -->
+<div class="modal-overlay" id="postModal">
+  <div class="modal" id="postModalContent"></div>
+</div>
+
+<script>
+const api = (path, data) => fetch(path, {
+  method: data ? 'POST' : 'GET',
+  headers: { 'Content-Type': 'application/json' },
+  body: data ? JSON.stringify(data) : undefined
+}).then(r => r.json());
+
+let currentUser = null;
+let currentTab = 'square';
+
+function toast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+function show(id) { document.getElementById(id).classList.remove('hidden'); }
+function hide(id) { document.getElementById(id).classList.add('hidden'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.nav button:not(#mySpaceBtn):not(.user-btn)').forEach(b => b.classList.remove('active'));
+  // 高亮当前 tab
+  document.querySelectorAll('.nav button').forEach(b => {
+    if ((tab === 'square' && b.textContent.includes('公共')) ||
+        (tab === 'sanhua' && b.textContent.includes('碎碎念')) ||
+        (tab === 'mySpace' && b.textContent.includes('我的空间'))) b.classList.add('active');
+  });
+  render();
+}
+
+function toggleUserMenu() {
+  const menu = document.getElementById('userMenu');
+  menu.classList.toggle('hidden');
+  if (!menu.classList.contains('hidden')) {
+    refreshUnread();
+  }
+}
+
+function showLogin() {
+  document.getElementById('loginModal').classList.add('show');
+  document.getElementById('loginTitle').textContent = '登录树洞';
+  document.getElementById('loginBtn2').textContent = '登录';
+  document.getElementById('regNick').classList.add('hidden');
+  document.getElementById('loginSwitch').textContent = '没有账号？去注册';
+}
+
+function toggleLoginMode() {
+  const title = document.getElementById('loginTitle');
+  const btn = document.getElementById('loginBtn2');
+  const nick = document.getElementById('regNick');
+  const phone = document.getElementById('regPhone');
+  const hint = document.getElementById('loginHint');
+  const sw = document.getElementById('loginSwitch');
+  if (title.textContent === '登录树洞') {
+    title.textContent = '注册树洞';
+    btn.textContent = '注册';
+    nick.classList.remove('hidden');
+    phone.classList.remove('hidden');
+    hint.classList.add('hidden');
+    sw.textContent = '已有账号？去登录';
+  } else {
+    title.textContent = '登录树洞';
+    btn.textContent = '登录';
+    nick.classList.add('hidden');
+    phone.classList.add('hidden');
+    hint.classList.remove('hidden');
+    sw.textContent = '没有账号？去注册';
+  }
+}
+
+async function doLogin() {
+  const username = document.getElementById('loginUser').value.trim();
+  const password = document.getElementById('loginPass').value.trim();
+  const nickname = document.getElementById('regNick').value.trim();
+  const isReg = document.getElementById('loginTitle').textContent === '注册树洞';
+
+  if (!username || !password) { toast('填完整再提交～'); return; }
+
+  if (isReg) {
+    const phone = document.getElementById('regPhone').value.trim();
+    const r = await api('/api/register', { username, password, nickname: nickname || username, phone: phone || undefined });
+    if (!r.ok) { toast(r.msg); return; }
+    toast('注册成功！请登录');
+    toggleLoginMode();
+    return;
+  }
+
+  const r = await api('/api/login', { username, password });
+  if (!r.ok) { toast(r.msg); return; }
+  
+  // 记住我：存到localStorage
+  if (document.getElementById('rememberMe').checked) {
+    localStorage.setItem('savedUser', username);
+    localStorage.setItem('savedPass', password);
+  } else {
+    localStorage.removeItem('savedUser');
+    localStorage.removeItem('savedPass');
+  }
+  
+  closeModal('loginModal');
+  await loadUser();
+  toast('欢迎回来～ 🌸');
+}
+
+async function loadUser() {
+  const r = await api('/api/me');
+  if (r.ok) {
+    currentUser = r.user;
+    hide('loginBtn');
+    show('userInfo');
+    show('mySpaceBtn');
+    loadUserBg();
+    show('friendsNavBtn');
+    document.getElementById('userName').textContent = r.user.nickname || r.user.username;
+    document.getElementById('menuName').textContent = r.user.nickname || r.user.username;
+    document.getElementById('menuAvatar').textContent = r.user.avatar || '😺';
+  } else {
+    currentUser = null;
+    show('loginBtn');
+    hide('userInfo');
+    hide('mySpaceBtn');
+    hide('friendsNavBtn');
+  }
+  return currentUser;
+  document.getElementById('userMenu').classList.add('hidden');
+}
+
+function showBindPhone() {
+  document.getElementById('userMenu').classList.add('hidden');
+  document.getElementById('phoneModal').classList.add('show');
+  document.getElementById('bindPhone').value = currentUser?.phone || '';
+}
+
+async function doBindPhone() {
+  const phone = document.getElementById('bindPhone').value.trim();
+  const r = await api('/api/bind-phone', { phone });
+  if (!r.ok) { toast(r.msg); return; }
+  closeModal('phoneModal');
+  await loadUser();
+  toast('手机号已绑定！📱');
+}
+
+// ============ 私信 ============
+
+let chatOtherUserId = null;
+
+// 刷新未读数
+async function refreshUnread() {
+  if (!currentUser) return;
+  const r = await api('/api/messages/unread-count');
+  if (r.ok && r.count > 0) {
+    const badge = document.getElementById('unreadBadge');
+    badge.classList.remove('hidden');
+    badge.textContent = r.count;
+  } else {
+    document.getElementById('unreadBadge').classList.add('hidden');
+  }
+}
+
+// 打开私信箱
+async function showInbox() {
+  document.getElementById('userMenu').classList.add('hidden');
+  document.getElementById('inboxModal').classList.add('show');
+  // 默认显示私信tab
+  switchInboxTab('msgs');
+}
+
+async function switchInboxTab(tab) {
+  const tabMsgs = document.getElementById('inboxTabMsgs');
+  const tabNotifs = document.getElementById('inboxTabNotifs');
+  const content = document.getElementById('inboxContent');
+  
+  if (tab === 'msgs') {
+    tabMsgs.style.borderBottom = '3px solid #00897b';
+    tabMsgs.style.color = '#00897b';
+    tabMsgs.style.fontWeight = '700';
+    tabNotifs.style.borderBottom = 'none';
+    tabNotifs.style.color = '#999';
+    tabNotifs.style.fontWeight = '400';
+    
+    const r = await api('/api/messages/inbox');
+    if (!r.ok) { content.innerHTML = '<div style="text-align:center;color:#999;padding:20px;">请先登录</div>'; return; }
+    
+    if (r.conversations.length === 0) {
+      content.innerHTML = '<div style="text-align:center;color:#999;padding:20px;">📩 还没有消息～</div>';
+    } else {
+      content.innerHTML = r.conversations.map(c => {
+        const time = new Date(c.last_msg_time + ' UTC').toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+        let status = '';
+        if (c.is_first_message && !c.chat_accepted) {
+          status = ' ⏳ 待确认';
+        }
+        return '<div class="card" style="cursor:pointer;padding:12px;" onclick="openChat(' + c.other_user_id + ')">' +
+            '<div style="display:flex;align-items:center;gap:10px;">' +
+              '<span style="font-size:1.5em;">' + c.avatar + '</span>' +
+              '<div style="flex:1;">' +
+                '<div style="font-weight:600;font-size:0.95em;">' + escapeHtml(maskName(c.nickname)) + status + '</div>' +
+                '<div style="font-size:0.8em;color:#999;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:250px;">' + escapeHtml(c.last_msg) + '</div>' +
+              '</div>' +
+              '<div style="font-size:0.7em;color:#bbb;">' + time + '</div>' +
+            '</div>' +
+          '</div>';
+      }).join('');
+    }
+    // 切换时清除未读提示
+    document.getElementById('unreadBadge').classList.add('hidden');
+  } else {
+    tabNotifs.style.borderBottom = '3px solid #00897b';
+    tabNotifs.style.color = '#00897b';
+    tabNotifs.style.fontWeight = '700';
+    tabMsgs.style.borderBottom = 'none';
+    tabMsgs.style.color = '#999';
+    tabMsgs.style.fontWeight = '400';
+    
+    const r = await api('/api/notifications');
+    if (!r.ok) { content.innerHTML = '<div style="text-align:center;color:#999;padding:20px;">请先登录</div>'; return; }
+    
+    if (r.notifications.length === 0) {
+      content.innerHTML = '<div style="text-align:center;color:#999;padding:20px;">🔔 还没有通知～</div>';
+    } else {
+      content.innerHTML = r.notifications.map(n => {
+        const time = new Date(n.created_at + ' UTC').toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+        return '<div class="card" style="padding:12px;' + (n.is_read ? '' : 'border-left:3px solid #00897b;') + '">' +
+            '<div style="display:flex;align-items:center;gap:10px;">' +
+              '<span style="font-size:1.2em;">' + (n.from_avatar || '🔔') + '</span>' +
+              '<div style="flex:1;">' +
+                '<div style="font-size:0.9em;color:#555;">' + escapeHtml(n.content) + '</div>' +
+                '<div style="font-size:0.7em;color:#bbb;">' + time + '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+      }).join('');
+    }
+  }
+}
+
+// 打开聊天
+let chatRefreshTimer = null;
+
+async function openChat(otherUserId) {
+  chatOtherUserId = otherUserId;
+  const r = await api('/api/messages/chat/' + otherUserId);
+  if (!r.ok) { toast(r.msg); return; }
+  
+  document.getElementById('chatAvatar').textContent = r.other_user.avatar || '😺';
+  // 聊天时对方的昵称脱敏显示
+  const otherName = r.other_user.nickname || '匿名';
+  document.getElementById('chatName').textContent = maskName(otherName);
+  
+  const msgs = document.getElementById('chatMessages');
+  msgs.innerHTML = r.messages.map(m => {
+    const align = m.is_mine ? 'right' : 'left';
+    const bg = m.is_mine ? 'linear-gradient(135deg,#00897b,#00acc1)' : '#f0f0f0';
+    const color = m.is_mine ? 'white' : '#333';
+    return '<div style="text-align:' + align + ';margin:6px 0;">' +
+      '<span style="display:inline-block;padding:8px 14px;border-radius:18px;background:' + bg + ';color:' + color + ';max-width:80%;word-wrap:break-word;font-size:0.9em;">' + escapeHtml(m.content) + '</span>' +
+    '</div>';
+  }).join('');
+  msgs.scrollTop = msgs.scrollHeight;
+
+  // 聊天动作：接受/拒绝
+  const actions = document.getElementById('chatActions');
+  let actionHtml = '';
+  
+  // 如果有第一句消息未确认
+  const pendingMsg = r.messages.find(m => !m.is_mine && m.is_first_message && !m.chat_accepted);
+  if (pendingMsg) {
+    actionHtml = 
+      '<button class="btn-primary" onclick="acceptMessage()" style="padding:8px 18px;font-size:0.85em;margin:4px;">✅ 接受聊天</button>' +
+      '<button class="btn-secondary" onclick="rejectMessage()" style="padding:8px 18px;font-size:0.85em;margin:4px;">❌ 忽略</button>';
+  }
+  actions.innerHTML = actionHtml;
+
+  document.getElementById('inboxModal').classList.remove('show');
+  document.getElementById('chatModal').classList.add('show');
+  document.getElementById('chatInput').value = '';
+  document.getElementById('chatInput').focus();
+
+  // 启动定时刷新
+  if (chatRefreshTimer) clearInterval(chatRefreshTimer);
+  chatRefreshTimer = setInterval(() => {
+    if (document.getElementById('chatModal').classList.contains('show')) {
+      refreshChat();
+    } else {
+      clearInterval(chatRefreshTimer);
+    }
+  }, 3000);
+}
+
+async function refreshChat() {
+  if (!chatOtherUserId) return;
+  const r = await api('/api/messages/chat/' + chatOtherUserId);
+  if (!r.ok) return;
+  
+  const msgs = document.getElementById('chatMessages');
+  const existingCount = msgs.children.length;
+  if (r.messages.length > existingCount) {
+    msgs.innerHTML = r.messages.map(m => {
+      const align = m.is_mine ? 'right' : 'left';
+      const bg = m.is_mine ? 'linear-gradient(135deg,#00897b,#00acc1)' : '#f0f0f0';
+      const color = m.is_mine ? 'white' : '#333';
+      return '<div style="text-align:' + align + ';margin:6px 0;">' +
+        '<span style="display:inline-block;padding:8px 14px;border-radius:18px;background:' + bg + ';color:' + color + ';max-width:80%;word-wrap:break-word;font-size:0.9em;">' + escapeHtml(m.content) + '</span>' +
+      '</div>';
+    }).join('');
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+}
+
+let privateMsgTargetId = null;
+
+// 发送私信到某人
+function sendPrivateMsg(toUserId) {
+  if (!currentUser) { toast('请先登录'); return; }
+  privateMsgTargetId = toUserId;
+  document.getElementById('privateMsgContent').value = '';
+  document.getElementById('privateMsgCounter').textContent = '0/50';
+  document.getElementById('privateMsgModal').classList.add('show');
+}
+
+async function doSendPrivateMsg() {
+  const content = document.getElementById('privateMsgContent').value.trim();
+  if (!content) { toast('写点内容呀～'); return; }
+  if (content.length > 50) { toast('不能超过50字哦～'); return; }
+  
+  const r = await api('/api/message/send', { to_user_id: privateMsgTargetId, content });
+  if (!r.ok) { toast(r.msg); return; }
+  closeModal('privateMsgModal');
+  toast(r.msg);
+  privateMsgTargetId = null;
+}
+
+// 聊天窗口发送
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const content = input.value.trim();
+  if (!content) return;
+  if (content.length > 200) { toast('消息太长啦～'); return; }
+  
+  const r = await api('/api/message/send', { to_user_id: chatOtherUserId, content });
+  if (!r.ok) { toast(r.msg); return; }
+  input.value = '';
+  await refreshChat();
+}
+
+async function acceptMessage() {
+  if (!chatOtherUserId) return;
+  const msgs = await api('/api/messages/chat/' + chatOtherUserId);
+  if (!msgs.ok) return;
+  const pending = msgs.messages.find(m => !m.is_mine && m.is_first_message && !m.chat_accepted);
+  if (!pending) { toast('没有待确认的消息'); return; }
+  const r = await api('/api/message/accept/' + pending.id, {});
+  if (!r.ok) { toast(r.msg); return; }
+  toast('已接受聊天！去看看你的好友列表吧 👥');
+  closeModal('chatModal');
+  chatOtherUserId = null;
+  await showFriends();
+}
+
+async function rejectMessage() {
+  if (!chatOtherUserId) return;
+  const msgs = await api('/api/messages/chat/' + chatOtherUserId);
+  if (!msgs.ok) return;
+  const pending = msgs.messages.find(m => !m.is_mine && m.is_first_message && !m.chat_accepted);
+  if (!pending) { toast('没有待确认的消息'); return; }
+  const r = await api('/api/message/reject/' + pending.id, {});
+  if (!r.ok) { toast(r.msg); return; }
+  toast('已忽略该消息');
+  closeModal('chatModal');
+}
+
+// ============ 点赞 ============
+
+async function toggleLike(postId, btn) {
+  if (!currentUser) { toast('请先登录'); return; }
+  const r = await api('/api/like/toggle', { post_id: postId });
+  if (!r.ok) { toast(r.msg); return; }
+  
+  // 更新点赞数
+  const countEl = btn.querySelector('.like-count-' + postId);
+  if (r.liked) {
+    btn.innerHTML = '❤️ <span class="like-count-' + postId + '">' + (parseInt(countEl.textContent || '0') + 1) + '</span>';
+    toast('❤️ 已点赞');
+  } else {
+    btn.innerHTML = '❤️ <span class="like-count-' + postId + '">' + Math.max(0, parseInt(countEl.textContent || '0') - 1) + '</span>';
+    toast('已取消点赞');
+  }
+  refreshUnread();
+}
+
+// 加载帖子时顺便加载点赞数
+async function loadLikes() {
+  const els = document.querySelectorAll('[class^="like-count-"]');
+  if (els.length === 0) return;
+  const ids = Array.from(els).map(el => el.className.replace('like-count-', '')).join(',');
+  const r = await api('/api/like/status?ids=' + ids);
+  if (!r.ok) return;
+  for (const [pid, data] of Object.entries(r.likes)) {
+    const el = document.querySelector('.like-count-' + pid);
+    if (el) {
+      el.textContent = data.count;
+      // 如果已赞，让按钮变红
+      const btn = el.closest('button');
+      if (btn && data.liked) {
+        btn.style.color = '#e53935';
+      } else if (btn) {
+        btn.style.color = '';
+      }
+    }
+  }
+}
+
+// 重写render里面的函数，渲染完成后loadLikes
+// 劫持一下postCard后的渲染流程
+
+async function showFriends() {
+  document.getElementById('userMenu').classList.add('hidden');
+  const r = await api('/api/friends');
+  if (!r.ok) { toast(r.msg); return; }
+  const list = document.getElementById('friendsList');
+  if (r.friends.length === 0) {
+    list.innerHTML = '<div style="text-align:center;color:#999;padding:20px;">👥 还没有好友～去公共广场找找聊得来的吧</div>';
+  } else {
+    list.innerHTML = r.friends.map(f => {
+      const displayName = f.note ? escapeHtml(f.note) : escapeHtml(maskName(f.nickname));
+      return '<div class="card" style="padding:12px;">' +
+        '<div style="display:flex;align-items:center;gap:10px;">' +
+          '<span style="font-size:1.5em;cursor:pointer;" onclick="closeModal(\'friendsModal\'); openChat(' + f.id + ')">' + f.avatar + '</span>' +
+          '<div style="flex:1;">' +
+            '<div style="font-weight:600;font-size:0.95em;cursor:pointer;" onclick="closeModal(\'friendsModal\'); openChat(' + f.id + ')">' + displayName + '</div>' +
+            '<div style="font-size:0.75em;color:#bbb;cursor:pointer;" onclick="editFriendNote(' + f.id + ', \'' + (f.note || '') + '\')">✏️ 设置备注</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+  document.getElementById('friendsModal').classList.add('show');
+}
+
+function editFriendNote(friendId, currentNote) {
+  const note = prompt('给这个好友设置备注名（别人看不到～）：', currentNote || '');
+  if (note === null) return;
+  doSaveFriendNote(friendId, note);
+}
+
+async function doSaveFriendNote(friendId, note) {
+  const r = await api('/api/friends/note', { friend_id: friendId, note: note || '' });
+  if (!r.ok) { toast(r.msg); return; }
+  toast('备注已保存 ✏️');
+  showFriends();
+}
+
+
+async function logout() {
+  document.getElementById('userMenu').classList.add('hidden');
+  await api('/api/logout');
+  currentUser = null;
+  toast('已退出～');
+  // 强制刷新页面以清除所有状态
+  location.reload();
+}
+
+function showWrite() {
+  document.getElementById('userMenu').classList.add('hidden');
+  document.getElementById('writeModal').classList.add('show');
+  document.getElementById('postTitle').value = '';
+  document.getElementById('postContent').value = '';
+  document.getElementById('postPublic').checked = true;
+}
+
+async function doWrite() {
+  const title = document.getElementById('postTitle').value.trim();
+  const content = document.getElementById('postContent').value.trim();
+  const is_public = document.getElementById('postPublic').checked;
+  if (!content) { toast('写点内容呀～'); return; }
+  const r = await api('/api/post', { title, content, is_public });
+  if (!r.ok) { toast(r.msg); return; }
+  closeModal('writeModal');
+  toast('发布成功！🎉');
+  render();
+}
+
+async function render() {
+  if (currentTab === 'square') { await renderSquare(); }
+  else if (currentTab === 'sanhua') { await renderSanhua(); }
+  else if (currentTab === 'mySpace') { await renderMySpace(); }
+  // 渲染完成后加载点赞
+  setTimeout(loadLikes, 100);
+}
+
+// 渲染卡片
+function postCard(post, showUser = true) {
+  const time = new Date(post.created_at + ' UTC').toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+  let badges = '';
+  if (post.is_sanhua) badges += '<span class="tag tag-sanhua">站长</span> ';
+  else if (post.is_public) badges += '<span class="tag tag-public">公开</span> ';
+  else badges += '<span class="tag tag-private">私密</span> ';
+
+  // 匿名树洞：所有对外显示都脱敏，只显示后两位
+  const displayName = maskName(post.nickname || '匿名');
+  const userInfo = showUser ? `<span class="avatar">${post.avatar || '😺'}</span> ${displayName}` : '';
+
+  // 私聊按钮：不能给自己发，且不能给站长发（站长说了算）
+  let privateBtn = '';
+  if (currentUser && currentUser.id !== post.user_id) {
+    privateBtn = `<button onclick="sendPrivateMsg(${post.user_id})">💌 私聊一句</button>`;
+  }
+
+  return `<div class="card">
+    <div class="card-title">${post.title || '无题'}</div>
+    <div class="card-meta">
+      ${userInfo}
+      <span>${time}</span>
+      ${badges}
+    </div>
+    <div class="card-content">${escapeHtml(post.content)}</div>
+    <div class="card-actions">
+      <button onclick="toggleLike(${post.id}, this)">❤️ <span class="like-count-${post.id}">0</span></button>
+      <button onclick="viewPost(${post.id})">💬 评论</button>
+      ${privateBtn}
+      ${currentUser && currentUser.id === post.user_id ? `<button onclick="deletePost(${post.id})">🗑️ 删除</button>` : ''}
+    </div>
+  </div>`;
+}
+
+// 匿名脱敏：只显示昵称后两位
+function maskName(name) {
+  if (!name) return '匿名';
+  if (name.length <= 2) return '**';
+  return '**' + name.slice(-2);
+}
+
+function escapeHtml(text) {
+  return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// 公共广场
+async function renderSquare() {
+  const r = await api('/api/public');
+  const html = r.posts.length
+    ? r.posts.map(p => postCard(p)).join('')
+    : '<div class="card" style="text-align:center;color:#999;">🌊 还没有人发公开内容… 快来当第一个！</div>';
+  document.getElementById('content').innerHTML = `<h3 style="margin-bottom:12px;color:#555;">🌊 公共广场</h3>${html}`;
+  if (currentUser) {
+    document.getElementById('content').innerHTML += `<div style="text-align:center;margin-top:8px;"><button class="btn-primary" onclick="showWrite()">✏️ 我也要吐槽</button></div>`;
+  }
+}
+
+// 三花的碎碎念
+async function renderSanhua() {
+  const r = await api('/api/sanhua');
+  const html = r.posts.length
+    ? r.posts.map(p => postCard(p, false)).join('')
+    : '<div class="card" style="text-align:center;color:#999;">🌸 三花还没写日记呢… 再等等～</div>';
+  document.getElementById('content').innerHTML = `
+    <div class="card" style="background:linear-gradient(135deg,#e0f7fa,#b2ebf2);text-align:center;">
+      <div style="font-size:2em;">🐱🌊</div>
+      <h3 style="margin:8px 0;color:#00695c;">三花の碎碎念</h3>
+      <p style="color:#00796b;font-size:0.85em;">海浪拍岸，猫在说话 🌊🐱</p>
+    </div>
+    ${html}`;
+}
+
+// 我的空间
+async function renderMySpace() {
+  if (!currentUser) return;
+  const r = await api(`/api/space/${currentUser.id}`);
+  if (!r.ok) { toast(r.msg); return; }
+  const { owner, posts } = r;
+  const postsHtml = posts.length
+    ? posts.map(p => postCard(p, false)).join('')
+    : '<div class="card" style="text-align:center;color:#999;">📝 你还没写东西呢～</div>';
+
+  document.getElementById('content').innerHTML = `
+    <div class="card">
+      <div class="space-header">
+        <div class="avatar">${owner.avatar || '😺'}</div>
+        <div class="nickname">${owner.nickname || owner.username}</div>
+        <div class="bio">${owner.bio || '这个人很懒，什么都没写~'}</div>
+        <div class="join-date">加入于 ${new Date(owner.created_at + ' UTC').toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' })}</div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-bottom:12px;">
+      <button class="btn-primary" onclick="showWrite()">✏️ 写新内容</button>
+    </div>
+    ${postsHtml}`;
+}
+
+// 帖子详情
+async function viewPost(id) {
+  const r = await api(`/api/post/${id}`);
+  if (!r.ok) { toast(r.msg); return; }
+  const { post, comments } = r;
+
+  let commentsHtml = comments.length
+    ? comments.map(c => `<div class="comment">
+        <div class="cmt-meta">${maskName(c.nickname)} · ${new Date(c.created_at + ' UTC').toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}</div>
+        <div class="cmt-content">${escapeHtml(c.content)}</div>
+      </div>`).join('')
+    : '<div style="color:#bbb;text-align:center;padding:10px;">还没有评论～</div>';
+
+  document.getElementById('postModalContent').innerHTML = `
+    <h2>${post.title || '无题'}</h2>
+    <div class="card-meta">
+      <span class="avatar">${post.avatar || '😺'}</span> ${maskName(post.nickname || '匿名')} · ${new Date(post.created_at + ' UTC').toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}
+    </div>
+    <div class="card-content" style="margin:12px 0;">${escapeHtml(post.content)}</div>
+    <hr style="border:none;border-top:1px solid #eee;margin:12px 0;">
+    <h3 style="margin-bottom:10px;">💬 评论</h3>
+    ${commentsHtml}
+    <div style="margin-top:12px;">
+      <textarea id="newComment_${id}" placeholder="说点什么…" style="width:100%;padding:10px;border:2px solid #eee;border-radius:12px;min-height:60px;resize:vertical;"></textarea>
+      <div style="text-align:right;margin-top:6px;">
+        <button class="btn-primary" style="padding:8px 18px;font-size:0.85em;" onclick="doComment(${id})">发送</button>
+        <button class="btn-secondary" style="padding:8px 18px;font-size:0.85em;" onclick="closeModal('postModal')">关闭</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('postModal').classList.add('show');
+}
+
+async function doComment(postId) {
+  const content = document.getElementById(`newComment_${postId}`).value.trim();
+  if (!content) { toast('写点内容呀～'); return; }
+  const r = await api('/api/comment', { post_id: postId, content });
+  if (!r.ok) { toast(r.msg); return; }
+  toast('评论成功！');
+  viewPost(postId);
+}
+
+async function deletePost(id) {
+  if (!confirm('确定要删除吗？')) return;
+  const r = await api('/api/post/delete/' + id, {});
+  if (!r.ok) { toast(r.msg); return; }
+  toast('已删除～');
+  render();
+}
+
+// 初始化
+(async () => {
+  await loadUser();
+  
+  // 自动登录
+  if (!currentUser) {
+    const savedUser = localStorage.getItem('savedUser');
+    const savedPass = localStorage.getItem('savedPass');
+    if (savedUser && savedPass) {
+      const r = await api('/api/login', { username: savedUser, password: savedPass });
+      if (r.ok) {
+        currentUser = r.user;
+        hide('loginBtn');
+        show('userInfo');
+        show('mySpaceBtn');
+        document.getElementById('userName').textContent = r.user.nickname || r.user.username;
+        document.getElementById('menuName').textContent = r.user.nickname || r.user.username;
+        document.getElementById('menuAvatar').textContent = r.user.avatar || '😺';
+      } else {
+        // 自动登录失败，清除保存的密码
+        localStorage.removeItem('savedUser');
+        localStorage.removeItem('savedPass');
+      }
+    }
+  }
+  
+  render();
+  // 定期检查未读私信
+  setInterval(refreshUnread, 10000);
+})();
+
+// 字数统计
+document.addEventListener('DOMContentLoaded', () => {
+  const pm = document.getElementById('privateMsgContent');
+  if (pm) {
+    pm.addEventListener('input', () => {
+      const len = pm.value.length;
+      document.getElementById('privateMsgCounter').textContent = len + '/50';
+      if (len > 50) pm.value = pm.value.substring(0, 50);
+    });
+  }
+});
+</script>
+</body>
+</html>
