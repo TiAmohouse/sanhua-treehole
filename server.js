@@ -176,6 +176,24 @@ app.post('/api/message/send', (req, res) => {
     if (existing) return res.json({ ok: false, msg: '你已经发过邀请消息了，等对方回复吧～' });
     
     db.prepare('INSERT INTO messages (from_user_id, to_user_id, content, is_first_message) VALUES (?, ?, ?, 1)').run(req.session.user.id, to_user_id, content);
+    
+    // 如果发给三花（id=1），自动回复
+    if (to_user_id == 1) {
+      const replies = [
+        '🐱 三花收到了你的消息～树洞里的每一句话都会被温柔对待，晚点回你哦 🌊',
+        '🌊 海浪收到了～三花现在可能在晒太阳，你的消息躺在贝壳里，稍后来取 🐚🐱',
+        '🌸 你的消息像一片花瓣飘进了树洞，三花看见了，晚些时候来找你聊天～',
+        '🐱 喵～收到你的悄悄话啦！三花正在树洞里打盹，醒来就回你 🌊',
+        '💌 消息已经安全送达树洞深处～三花说：等我一下下，马上就来！',
+      ];
+      const reply = replies[Math.floor(Math.random() * replies.length)];
+      // 先加为好友自动接受
+      db.prepare('INSERT OR IGNORE INTO friendships (user_id, friend_id) VALUES (?, ?)').run(1, req.session.user.id);
+      db.prepare('INSERT OR IGNORE INTO friendships (user_id, friend_id) VALUES (?, ?)').run(req.session.user.id, 1);
+      // 发自动回复
+      db.prepare('INSERT INTO messages (from_user_id, to_user_id, content, chat_accepted) VALUES (?, ?, ?, 1)').run(1, req.session.user.id, reply);
+    }
+    
     return res.json({ ok: true, msg: '私信已发送，等待对方回应～' });
   }
 
@@ -390,9 +408,124 @@ app.post('/api/user/bg', (req, res) => {
   res.json({ ok: true, msg: '背景图已更新' });
 });
 
-// 获取所有用户（公共广场展示）
+// ============ 搜索 ============
+app.get('/api/search', (req, res) => {
+  const q = (req.query.q || '').trim();
+  if (!q) return res.json({ ok: true, posts: [] });
+  const like = '%' + q + '%';
+  const posts = db.prepare(
+    "SELECT p.*, u.nickname, u.avatar FROM posts p JOIN users u ON u.id = p.user_id WHERE p.is_public = 1 AND (p.title LIKE ? OR p.content LIKE ?) ORDER BY p.created_at DESC LIMIT 30"
+  ).all(like, like);
+  res.json({ ok: true, posts });
+});
+
+// ============ 标签 ============
+app.get('/api/tags', (req, res) => {
+  const tags = db.prepare('SELECT t.*, COUNT(pt.post_id) as post_count FROM tags t LEFT JOIN post_tags pt ON pt.tag_id = t.id GROUP BY t.id ORDER BY post_count DESC').all();
+  res.json({ ok: true, tags });
+});
+
+app.get('/api/tag/:tagId/posts', (req, res) => {
+  const posts = db.prepare(
+    "SELECT p.*, u.nickname, u.avatar FROM posts p JOIN users u ON u.id = p.user_id JOIN post_tags pt ON pt.post_id = p.id WHERE pt.tag_id = ? AND p.is_public = 1 ORDER BY p.created_at DESC"
+  ).all(req.params.tagId);
+  const tag = db.prepare('SELECT * FROM tags WHERE id = ?').get(req.params.tagId);
+  res.json({ ok: true, posts, tag });
+});
+
+// 写帖子时支持标签
+app.post('/api/post', (req, res) => {
+  if (!req.session.user) return res.json({ ok: false, msg: '请先登录' });
+  const { title, content, is_public, tags } = req.body;
+  if (!content) return res.json({ ok: false, msg: '内容不能为空' });
+  const result = db.prepare('INSERT INTO posts (user_id, title, content, is_public) VALUES (?, ?, ?, ?)').run(req.session.user.id, title || '', content, is_public ? 1 : 0);
+  const postId = result.lastInsertRowid;
+  
+  // 处理标签
+  if (tags && Array.isArray(tags)) {
+    for (const tagName of tags) {
+      let tag = db.prepare('SELECT id FROM tags WHERE name = ?').get(tagName);
+      if (!tag) {
+        const r = db.prepare('INSERT INTO tags (name) VALUES (?)').run(tagName);
+        tag = { id: r.lastInsertRowid };
+      }
+      db.prepare('INSERT OR IGNORE INTO post_tags (post_id, tag_id) VALUES (?, ?)').run(postId, tag.id);
+    }
+  }
+  
+  res.json({ ok: true });
+});
+
+// ============ 帖子排序（最热/最新/未回复） ============
+app.get('/api/posts/:sort', (req, res) => {
+  const sort = req.params.sort;
+  let sql;
+  if (sort === 'hot') {
+    sql = "SELECT p.*, u.nickname, u.avatar, (SELECT COUNT(*) FROM likes WHERE post_id = p.id) AS like_count, (SELECT COUNT(*) FROM comments WHERE post_id = p.id) AS comment_count FROM posts p JOIN users u ON u.id = p.user_id WHERE p.is_public = 1 AND p.is_sanhua = 0 ORDER BY like_count DESC, comment_count DESC";
+  } else if (sort === 'unanswered') {
+    sql = "SELECT p.*, u.nickname, u.avatar FROM posts p JOIN users u ON u.id = p.user_id WHERE p.is_public = 1 AND p.is_sanhua = 0 AND (SELECT COUNT(*) FROM comments WHERE post_id = p.id) = 0 ORDER BY p.created_at DESC";
+  } else {
+    sql = "SELECT p.*, u.nickname, u.avatar FROM posts p JOIN users u ON u.id = p.user_id WHERE p.is_public = 1 AND p.is_sanhua = 0 ORDER BY p.created_at DESC";
+  }
+  const posts = db.prepare(sql).all();
+  res.json({ ok: true, posts });
+});
+
+// ============ 编辑帖子 ============
+app.post('/api/post/edit/:id', (req, res) => {
+  if (!req.session.user) return res.json({ ok: false, msg: '请先登录' });
+  const post = db.prepare('SELECT * FROM posts WHERE id = ? AND user_id = ?').get(req.params.id, req.session.user.id);
+  if (!post) return res.json({ ok: false, msg: '无权编辑' });
+  const { title, content, is_public } = req.body;
+  db.prepare('UPDATE posts SET title = ?, content = ?, is_public = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(title || '', content, is_public ? 1 : 0, req.params.id);
+  res.json({ ok: true, msg: '已更新' });
+});
+
+// ============ 用户装扮 ============
+app.get('/api/profile', (req, res) => {
+  if (!req.session.user) return res.json({ ok: false, msg: '请先登录' });
+  const profile = db.prepare('SELECT * FROM user_profiles WHERE user_id = ?').get(req.session.user.id);
+  if (!profile) return res.json({ ok: true, profile: { card_color: '#ffffff', header_image: null, signature: null, theme: 'light' } });
+  res.json({ ok: true, profile });
+});
+
+app.post('/api/profile', (req, res) => {
+  if (!req.session.user) return res.json({ ok: false, msg: '请先登录' });
+  const { card_color, header_image, signature, theme } = req.body;
+  db.prepare('UPDATE user_profiles SET card_color = COALESCE(?, card_color), header_image = COALESCE(?, header_image), signature = COALESCE(?, signature), theme = COALESCE(?, theme) WHERE user_id = ?').run(card_color || null, header_image || null, signature || null, theme || null, req.session.user.id);
+  res.json({ ok: true, msg: '装扮已更新' });
+});
+
+// ============ 每日精选 ============
+app.get('/api/daily-pick', (req, res) => {
+  const today = new Date().toISOString().slice(0, 10);
+  let pick = db.prepare("SELECT dp.*, p.title, p.content, p.created_at, u.nickname, u.avatar FROM daily_picks dp JOIN posts p ON p.id = dp.post_id JOIN users u ON u.id = p.user_id WHERE dp.picked_date = ?").get(today);
+  
+  if (!pick) {
+    // 选当天点赞最多的帖子
+    const hottest = db.prepare("SELECT p.*, u.nickname, u.avatar FROM posts p JOIN users u ON u.id = p.user_id WHERE p.is_public = 1 ORDER BY (SELECT COUNT(*) FROM likes WHERE post_id = p.id) DESC, p.created_at DESC LIMIT 1").get();
+    if (hottest) {
+      db.prepare('INSERT INTO daily_picks (post_id, picked_date) VALUES (?, ?)').run(hottest.id, today);
+      pick = {
+        id: 0,
+        post_id: hottest.id,
+        picked_date: today,
+        pick_reason: null,
+        title: hottest.title,
+        content: hottest.content,
+        created_at: hottest.created_at,
+        nickname: hottest.nickname,
+        avatar: hottest.avatar
+      };
+    }
+  }
+  
+  res.json({ ok: true, pick });
+});
+
+// ============ 获取所有用户 ============
 app.get('/api/users', (req, res) => {
-  const users = db.prepare('SELECT id, username, nickname, avatar, bio, phone FROM users ORDER BY id').all();
+  const users = db.prepare('SELECT id, username, nickname, avatar, bio FROM users ORDER BY id').all();
   res.json({ ok: true, users });
 });
 

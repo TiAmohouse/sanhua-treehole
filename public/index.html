@@ -223,6 +223,35 @@
     margin-left: 6px;
   }
 
+  /* 夜间模式 */
+  body.dark-mode {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    color: #e0e0e0;
+  }
+  body.dark-mode .header,
+  body.dark-mode .card,
+  body.dark-mode .modal {
+    background: rgba(30,30,50,0.92);
+    color: #ddd;
+  }
+  body.dark-mode .header h1 {
+    background: linear-gradient(135deg, #64b5f6, #4dd0e1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  body.dark-mode .nav button { background: rgba(40,40,70,0.85); color: #aaa; }
+  body.dark-mode .nav button.active { background: linear-gradient(135deg, #1565c0, #00838f); color: white; }
+  body.dark-mode .card-title { color: #eee; }
+  body.dark-mode .card-content { color: #bbb; }
+  body.dark-mode input, body.dark-mode textarea { background: #2a2a45; border-color: #444; color: #ddd; }
+  body.dark-mode .menu-btn { background: linear-gradient(135deg,#1a3a5c,#0d4a5e); color: #b0d4e8; }
+  body.dark-mode .menu-btn:hover { background: linear-gradient(135deg,#1a4a6c,#0d5a6e); }
+  body.dark-mode .tag-public { background: #1a3a5c; color: #64b5f6; }
+  body.dark-mode .tag-private { background: #3a2a1a; color: #ffb74d; }
+  body.dark-mode .tag-sanhua { background: linear-gradient(135deg, #3a1a3a, #2a1a4a); color: #ce93d8; }
+  body.dark-mode .subtitle { background: linear-gradient(135deg, #1565c022, #00838f22); color: #888; }
+
   @media (max-width: 600px) {
     .container { padding: 12px; }
     .header { padding: 20px 15px; }
@@ -241,11 +270,14 @@
 
   <!-- 导航 -->
   <div class="nav">
-    <button class="active" onclick="switchTab('square')">🌊 公共广场</button>
-    <button onclick="switchTab('sanhua')">🌸 三花の碎碎念</button>
-    <button id="mySpaceBtn" class="hidden" onclick="switchTab('mySpace')">🏠 我的空间</button>
+    <button class="active" onclick="switchTab('square')">🌊 广场</button>
+    <button onclick="switchTab('sanhua')">🌸 碎碎念</button>
+    <button onclick="switchTab('tags')">🏷️ 标签</button>
+    <button onclick="switchTab('search')">🔍 搜索</button>
+    <button id="mySpaceBtn" class="hidden" onclick="switchTab('mySpace')">🏠 我的</button>
     <div class="nav-right">
-      <button id="loginBtn" onclick="showLogin()" style="background:linear-gradient(135deg,#00897b,#00acc1);color:white;">登录 / 注册</button>
+      <button onclick="toggleDarkMode()" id="darkModeBtn" style="font-size:0.85em;padding:6px 10px;background:transparent;border:none;cursor:pointer;">🌙</button>
+      <button id="loginBtn" onclick="showLogin()" style="background:linear-gradient(135deg,#00897b,#00acc1);color:white;">登录</button>
       <button id="userInfo" class="hidden user-btn" onclick="toggleUserMenu()">😺 <span id="userName"></span> ▼</button>
     </div>
   </div>
@@ -262,6 +294,8 @@
       </button>
       <button class="menu-btn" onclick="showFriends()">👥 好友列表</button>
       <button class="menu-btn" onclick="showBgSetting()">🎨 设置背景</button>
+      <button class="menu-btn" onclick="showProfileSetting()">🎭 主页装扮</button>
+      <button class="menu-btn" onclick="toggleDarkMode()">🌙 夜间模式</button>
       <button class="menu-btn" onclick="event.stopPropagation(); logout()">退出</button>
     </div>
   </div>
@@ -405,6 +439,25 @@
     <div id="friendsList"></div>
     <div style="text-align:right;margin-top:12px;">
       <button class="btn-secondary" onclick="closeModal('friendsModal')">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 主页装扮弹窗 -->
+<div class="modal-overlay" id="profileModal">
+  <div class="modal">
+    <h2>🎭 主页装扮</h2>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:0.85em;color:#888;">卡片颜色</label>
+      <input type="color" id="profileCardColor" value="#ffffff" style="width:100%;height:40px;padding:4px;border:2px solid #eee;border-radius:12px;">
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:0.85em;color:#888;">个性签名</label>
+      <input type="text" id="profileSignature" placeholder="写一句你的签名～" style="width:100%;padding:10px;border:2px solid #eee;border-radius:12px;">
+    </div>
+    <div style="text-align:right;">
+      <button class="btn-primary" onclick="saveProfile()">保存</button>
+      <button class="btn-secondary" onclick="closeModal('profileModal')">取消</button>
     </div>
   </div>
 </div>
@@ -873,14 +926,28 @@ async function doSaveFriendNote(friendId, note) {
 
 async function logout() {
   document.getElementById('userMenu').classList.add('hidden');
-  await api('/api/logout');
-  // 清除保存的登录信息
+  try {
+    await api('/api/logout', {});
+  } catch(e) {
+    // 后端可能挂了，但也要退
+  }
+  // 清除所有本地状态
   localStorage.removeItem('savedUser');
   localStorage.removeItem('savedPass');
   currentUser = null;
+  
+  // 直接切换UI为未登录状态
+  show('loginBtn');
+  hide('userInfo');
+  hide('mySpaceBtn');
+  document.getElementById('userName').textContent = '';
+  document.getElementById('menuName').textContent = '';
+  document.getElementById('menuAvatar').textContent = '😺';
+  document.getElementById('unreadBadge').classList.add('hidden');
+  
   toast('已退出～');
-  // 重新加载页面
-  setTimeout(() => location.reload(), 300);
+  // 刷新页面
+  window.location.href = window.location.href;
 }
 
 function showWrite() {
@@ -941,7 +1008,7 @@ function postCard(post, showUser = true) {
       <button onclick="toggleLike(${post.id}, this)">❤️ <span class="like-count-${post.id}">0</span></button>
       <button onclick="viewPost(${post.id})">💬 评论</button>
       ${privateBtn}
-      ${currentUser && currentUser.id === post.user_id ? `<button onclick="deletePost(${post.id})">🗑️ 删除</button>` : ''}
+      ${currentUser && currentUser.id === post.user_id ? `<button onclick="editPost(${post.id})">✏️</button><button onclick="deletePost(${post.id})">🗑️</button>` : ''}
     </div>
   </div>`;
 }
@@ -1169,6 +1236,267 @@ function loadUserBg() {
     document.body.style.backgroundAttachment = '';
   }
 }
+
+// ============ 夜间模式 ============
+function toggleDarkMode() {
+  document.body.classList.toggle('dark-mode');
+  const isDark = document.body.classList.contains('dark-mode');
+  document.getElementById('darkModeBtn').textContent = isDark ? '☀️' : '🌙';
+  localStorage.setItem('darkMode', isDark ? '1' : '0');
+}
+
+// 初始化夜间模式
+(function() {
+  if (localStorage.getItem('darkMode') === '1') {
+    document.body.classList.add('dark-mode');
+    setTimeout(() => { document.getElementById('darkModeBtn').textContent = '☀️'; }, 100);
+  }
+})();
+
+// ============ 主题标签 & 搜索 ============
+
+// 渲染标签页
+async function renderTags() {
+  const r = await api('/api/tags');
+  if (!r.ok) return;
+  let html = '<h3 style="margin-bottom:12px;color:#555;">🏷️ 标签</h3>';
+  if (r.tags.length === 0) {
+    html += '<div class="card" style="text-align:center;color:#999;">还没有标签，快去发帖吧～</div>';
+  } else {
+    html += '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+    for (const tag of r.tags) {
+      html += '<div class="card" style="cursor:pointer;padding:10px 16px;display:inline-block;" onclick="switchTab(\'tag_' + tag.id + '\')">#' + escapeHtml(tag.name) + ' (' + tag.post_count + ')</div>';
+    }
+    html += '</div>';
+  }
+  document.getElementById('content').innerHTML = html;
+}
+
+// 渲染某个标签的帖子
+async function renderTagPosts(tagId) {
+  const r = await api('/api/tag/' + tagId + '/posts');
+  if (!r.ok) return;
+  const tagName = r.tag ? r.tag.name : '未知标签';
+  const html = '<h3 style="margin-bottom:12px;color:#555;">#' + escapeHtml(tagName) + '</h3>' +
+    (r.posts.length ? r.posts.map(p => postCard(p)).join('') : '<div class="card" style="text-align:center;color:#999;">该标签下还没有帖子</div>');
+  document.getElementById('content').innerHTML = html;
+  setTimeout(loadLikes, 100);
+}
+
+// 渲染搜索页
+async function renderSearch() {
+  const html = '<h3 style="margin-bottom:12px;color:#555;">🔍 搜索帖子</h3>' +
+    '<div style="display:flex;gap:8px;margin-bottom:16px;">' +
+      '<input type="text" id="searchInput" placeholder="搜标题或内容…" style="flex:1;padding:10px 14px;border:2px solid #eee;border-radius:25px;outline:none;" onkeydown="if(event.key===\'Enter\') doSearch()">' +
+      '<button class="btn-primary" onclick="doSearch()" style="padding:10px 18px;">搜索</button>' +
+    '</div>' +
+    '<div id="searchResults"></div>';
+  document.getElementById('content').innerHTML = html;
+}
+
+async function doSearch() {
+  const q = document.getElementById('searchInput').value.trim();
+  if (!q) { toast('输入关键词再搜～'); return; }
+  const r = await api('/api/search?q=' + encodeURIComponent(q));
+  const results = document.getElementById('searchResults');
+  if (r.posts.length === 0) {
+    results.innerHTML = '<div class="card" style="text-align:center;color:#999;">没找到相关帖子～</div>';
+  } else {
+    results.innerHTML = '<div style="color:#888;margin-bottom:8px;">找到 ' + r.posts.length + ' 条结果</div>' + r.posts.map(p => postCard(p)).join('');
+    setTimeout(loadLikes, 100);
+  }
+}
+
+// ============ 排序切换 ============
+let currentSort = 'latest';
+
+async function renderSquare() {
+  const sortBtns = '<div style="display:flex;gap:8px;margin-bottom:12px;">' +
+    '<button class="' + (currentSort === 'latest' ? 'btn-primary' : 'btn-secondary') + '" onclick="changeSort(\'latest\')" style="padding:6px 14px;font-size:0.85em;">⏱ 最新</button>' +
+    '<button class="' + (currentSort === 'hot' ? 'btn-primary' : 'btn-secondary') + '" onclick="changeSort(\'hot\')" style="padding:6px 14px;font-size:0.85em;">🔥 最热</button>' +
+    '<button class="' + (currentSort === 'unanswered' ? 'btn-primary' : 'btn-secondary') + '" onclick="changeSort(\'unanswered\')" style="padding:6px 14px;font-size:0.85em;">💬 未回复</button>' +
+  '</div>';
+  document.getElementById('content').innerHTML = '<h3 style="margin-bottom:8px;color:#555;">🌊 公共广场</h3>' + sortBtns + '<div id="squareContent"></div>';
+  await loadSquarePosts();
+}
+
+async function changeSort(sort) {
+  currentSort = sort;
+  document.getElementById('squareContent').innerHTML = '<div style="text-align:center;color:#999;padding:20px;">加载中…</div>';
+  await loadSquarePosts();
+}
+
+async function loadSquarePosts() {
+  const r = await api('/api/posts/' + currentSort);
+  const container = document.getElementById('squareContent');
+  if (r.posts.length === 0) {
+    container.innerHTML = '<div class="card" style="text-align:center;color:#999;">🌊 还没有人发公开内容…</div>';
+  } else {
+    container.innerHTML = r.posts.map(p => postCard(p)).join('');
+    setTimeout(loadLikes, 100);
+  }
+  if (currentUser) {
+    container.innerHTML += '<div style="text-align:center;margin-top:8px;"><button class="btn-primary" onclick="showWrite()">✏️ 我也要吐槽</button></div>';
+  }
+}
+
+// ============ 写帖子支持标签 ============
+let availableTags = [];
+
+async function loadTags() {
+  const r = await api('/api/tags');
+  if (r.ok) availableTags = r.tags;
+}
+
+async function showWrite() {
+  document.getElementById('userMenu').classList.add('hidden');
+  await loadTags();
+  const tagsHtml = availableTags.length ? 
+    '<div style="margin-bottom:8px;"><label style="font-size:0.85em;color:#888;">标签（点击选择）</label><div id="tagSelector" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">' +
+    availableTags.map(t => '<span style="cursor:pointer;padding:4px 10px;border-radius:12px;background:#e0f7fa;color:#00695c;font-size:0.8em;" onclick="toggleSelectedTag(' + t.id + ', \'' + escapeHtml(t.name) + '\', this)">#' + escapeHtml(t.name) + '</span>').join('') +
+    '</div></div>' : '';
+  document.getElementById('writeModal').querySelector('.modal').innerHTML = 
+    '<h2>✏️ 写点什么</h2>' +
+    '<input type="text" id="postTitle" placeholder="标题（选填）">' +
+    '<textarea id="postContent" placeholder="今天想说什么…"></textarea>' +
+    tagsHtml +
+    '<div class="form-row"><label><input type="checkbox" id="postPublic" checked> 发到公共广场</label></div>' +
+    '<div style="text-align:right;"><button class="btn-primary" onclick="doWrite()">发布</button><button class="btn-secondary" onclick="closeModal(\'writeModal\')">取消</button></div>';
+  selectedTags = [];
+  document.getElementById('writeModal').classList.add('show');
+}
+
+let selectedTags = [];
+
+function toggleSelectedTag(tagId, tagName, el) {
+  const idx = selectedTags.findIndex(t => t.id === tagId);
+  if (idx > -1) {
+    selectedTags.splice(idx, 1);
+    el.style.background = '#e0f7fa';
+    el.style.color = '#00695c';
+  } else {
+    selectedTags.push({ id: tagId, name: tagName });
+    el.style.background = '#00897b';
+    el.style.color = 'white';
+  }
+}
+
+async function doWrite() {
+  const title = document.getElementById('postTitle').value.trim();
+  const content = document.getElementById('postContent').value.trim();
+  const is_public = document.getElementById('postPublic').checked;
+  if (!content) { toast('写点内容呀～'); return; }
+  const r = await api('/api/post', { title, content, is_public, tags: selectedTags.map(t => t.name) });
+  if (!r.ok) { toast(r.msg); return; }
+  closeModal('writeModal');
+  toast('发布成功！🎉');
+  render();
+}
+
+// ============ 编辑帖子 ============
+function editPost(postId) {
+  closeModal('postModal');
+  // 获取帖子当前内容
+  const modal = document.getElementById('writeModal');
+  modal.querySelector('.modal').innerHTML = 
+    '<h2>✏️ 编辑</h2>' +
+    '<input type="text" id="editPostTitle" placeholder="标题（选填）">' +
+    '<textarea id="editPostContent" placeholder="内容…"></textarea>' +
+    '<div class="form-row"><label><input type="checkbox" id="editPostPublic" checked> 发到公共广场</label></div>' +
+    '<div style="text-align:right;"><button class="btn-primary" onclick="doEditPost(' + postId + ')">保存</button><button class="btn-secondary" onclick="closeModal(\'writeModal\')">取消</button></div>';
+  
+  // 加载帖子内容
+  api('/api/post/' + postId).then(r => {
+    if (r.ok) {
+      document.getElementById('editPostTitle').value = r.post.title || '';
+      document.getElementById('editPostContent').value = r.post.content;
+      document.getElementById('editPostPublic').checked = !!r.post.is_public;
+    }
+  });
+  modal.classList.add('show');
+}
+
+async function doEditPost(postId) {
+  const title = document.getElementById('editPostTitle').value.trim();
+  const content = document.getElementById('editPostContent').value.trim();
+  const is_public = document.getElementById('editPostPublic').checked;
+  if (!content) { toast('内容不能为空～'); return; }
+  const r = await api('/api/post/edit/' + postId, { title, content, is_public });
+  if (!r.ok) { toast(r.msg); return; }
+  closeModal('writeModal');
+  toast('已更新 ✏️');
+  render();
+}
+
+// ============ 主页装扮 ============
+
+async function showProfileSetting() {
+  document.getElementById('userMenu').classList.add('hidden');
+  const r = await api('/api/profile');
+  if (r.ok && r.profile) {
+    document.getElementById('profileCardColor').value = r.profile.card_color || '#ffffff';
+    document.getElementById('profileSignature').value = r.profile.signature || '';
+  }
+  document.getElementById('profileModal').classList.add('show');
+}
+
+async function saveProfile() {
+  const card_color = document.getElementById('profileCardColor').value;
+  const signature = document.getElementById('profileSignature').value.trim();
+  const r = await api('/api/profile', { card_color, signature: signature || null });
+  if (!r.ok) { toast(r.msg); return; }
+  closeModal('profileModal');
+  toast('主页装扮已更新 🎭');
+  render();
+}
+
+// ============ 每日精选 ============
+
+async function renderDailyPick() {
+  const r = await api('/api/daily-pick');
+  if (!r.ok || !r.pick) return;
+  const pick = r.pick;
+  const html = '<div class="card" style="border:2px solid #ffd54f;position:relative;">' +
+    '<div style="position:absolute;top:-10px;left:16px;background:linear-gradient(135deg,#ffd54f,#ffb300);padding:4px 12px;border-radius:12px;font-size:0.75em;font-weight:700;color:#333;">🌟 今日精选</div>' +
+    '<div style="margin-top:10px;">' +
+      '<div class="card-title">' + escapeHtml(pick.title || '无题') + '</div>' +
+      '<div class="card-meta"><span class="avatar">' + (pick.avatar || '😺') + '</span> ' + maskName(pick.nickname || '匿名') + '</div>' +
+      '<div class="card-content">' + escapeHtml(pick.content) + '</div>' +
+    '</div>' +
+  '</div>';
+  
+  const h1 = document.querySelector('.header h1');
+  h1.insertAdjacentHTML('afterend', html);
+}
+
+// ============ SwitchTab 重写 ============
+async function render() {
+  const tab = currentTab;
+  document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.nav button').forEach(b => {
+    if ((tab === 'square' && b.textContent.includes('广场')) ||
+        (tab === 'sanhua' && b.textContent.includes('碎碎念')) ||
+        (tab === 'tags' && b.textContent.includes('标签')) ||
+        (tab === 'search' && b.textContent.includes('搜索')) ||
+        (tab === 'mySpace' && b.textContent.includes('我的'))) b.classList.add('active');
+    if (tab && tab.startsWith('tag_') && b.textContent.includes('标签')) b.classList.add('active');
+  });
+  
+  if (tab === 'square') { await renderSquare(); }
+  else if (tab === 'sanhua') { await renderSanhua(); }
+  else if (tab === 'tags') { await renderTags(); }
+  else if (tab === 'search') { await renderSearch(); }
+  else if (tab === 'mySpace') { await renderMySpace(); }
+  else if (tab && tab.startsWith('tag_')) {
+    const tagId = tab.split('_')[1];
+    await renderTagPosts(tagId);
+  }
+}
+
+// 初始化加载每日精选
+(function() {
+  setTimeout(renderDailyPick, 500);
+})();
 
 // 字数统计
 document.addEventListener('DOMContentLoaded', () => {
